@@ -1,0 +1,26 @@
+[package]
+name = "adb_util"
+version = "0.1.0"
+edition = "2021"
+license = "Unlicense"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+egui = "0.19.0"
+eframe = { version = "0.19.0", features = ["persistence"] }
+serde = { version = "1", features = ["derive"] }
+tracing-subscriber = "0.3"
+tokio = { version = "1.21.1", features = ["process", "rt", "rt-multi-thread", "io-util", "sync", "macros", "time"] }
+
+
+
+[profile.ship] # use with "cargo build --profile ship"
+inherits = "release"
+opt-level = "z" # Optimize for size.
+panic = "abort"
+lto = true
+codegen-units = 1
+strip = true
