@@ -1,4 +1,4 @@
-use std::process::Stdio;
+use std::{process::Stdio, str};
 
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
@@ -123,6 +123,7 @@ impl InputRecorder {
         tap_threshold_ms : u32,
     ) {
 
+        
 
         let mut child = Command::new("adb.exe")
             .arg("shell")
@@ -186,8 +187,10 @@ impl InputRecorder {
             Ok(ok) => ok.ok(),
         };
 
+        let screenInfo = get_screen_info().await.ok_or(ReadEventsError::ParseError).unwrap_or(Default::default());
+
         let inputs = device_entry_and_input_events.map(
-            |e| convert_events_to_input(&e.1, tap_threshold_distance, tap_threshold_ms));
+            |e| convert_events_to_input(&e.1, tap_threshold_distance, tap_threshold_ms, screenInfo));
 
         if let Err(_) = result_send.send(inputs) {
             eprintln!("failed to send result");
@@ -212,6 +215,10 @@ async fn record_inputs_output(
     status_sender: mpsc::UnboundedSender<StatusMessage>,
 ) -> Result<(Vec<DeviceEntry>, Vec<InputEventInfo>), ReadEventsError> {
     let mut stdout_reader = BufReader::new(stdout);
+
+
+
+
 
     let mut line_buffer = String::new();
 
@@ -262,4 +269,94 @@ async fn record_inputs_output(
     }
 
     Ok((devices, inputs))
+}
+
+
+async fn get_screen_info() -> Option<ScreenInfo> {
+    let output = Command::new("adb.exe")
+    .arg("shell")
+    .arg("dumpsys")
+    .arg("input")
+    .creation_flags(NO_WINDOW_FLAGS)
+    .output()
+    .await
+    .ok()?;
+
+    let s =  str::from_utf8(&output.stdout).ok()?;
+
+
+    let mut iter = s.split_ascii_whitespace();
+
+
+
+    let mut get_next_param = move |s|{
+        loop {
+            if s == iter.next()?
+            {
+                break iter.next()
+            }            
+        }
+    };
+
+
+
+    let width = get_next_param("RawSurfaceWidth:")?
+        .trim_end_matches("px")
+        .parse::<i32>()
+        .expect("RawSurfaceWidth: not found or parsed");
+
+    let height = get_next_param("RawSurfaceHeight:")?
+        .trim_end_matches("px")
+        .parse::<i32>()
+        .expect("RawSurfaceHeight: not found or parsed");
+
+    let orientation = get_next_param("SurfaceOrientation:")?
+        .parse::<u32>()
+        .ok()
+        .map(|i| match i {
+            0 => Some(Orientation::Portrait),
+            1 => Some(Orientation::LandscapeLeft),
+            3 => Some(Orientation::LandscapeRight),
+            _ => None
+        })  
+        .flatten()
+        .expect("SurfaceOrientation: not found or parsed");
+
+
+
+    Some(ScreenInfo {
+        height,
+        orientation,
+        width
+        })
+}
+
+pub struct ScreenInfo {
+    pub orientation : Orientation,
+    pub width : i32,
+    pub height : i32,
+}
+
+impl ScreenInfo {
+    pub fn remap(&self, (x,y) : (i32,i32)) -> (i32,i32)
+    {
+        match self.orientation {
+            Orientation::Portrait => (x,y),
+            Orientation::LandscapeLeft => (y ,self.width - x),
+            Orientation::LandscapeRight => (self.height - y,x),
+        }
+    }
+
+}
+
+impl Default for ScreenInfo {
+    fn default() -> Self {
+        Self { orientation: Orientation::Portrait, width: 0, height: 0}
+    }
+}
+
+pub enum Orientation {
+    Portrait,
+    LandscapeLeft,
+    LandscapeRight
 }

@@ -4,7 +4,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::input_event::{InputEvent, InputEventInfo, TouchType};
+use crate::{input_event::{InputEvent, InputEventInfo, TouchType}, input_event_recorder::ScreenInfo};
 
 #[derive(Clone, Copy)]
 pub struct InputWithTimestamp {
@@ -165,6 +165,7 @@ pub fn convert_events_to_input(
     inputs: &[InputEventInfo],
     tap_threshold_distance : u32,
     tap_threshold_ms : u32,
+    screen_info : ScreenInfo,
 ) -> Vec<InputWithTimestamp> {
     struct DownInput {
         x : i32,
@@ -207,18 +208,22 @@ pub fn convert_events_to_input(
                         let is_swipe = distance_moved > tap_threshold_distance || down_dur_ms > tap_threshold_ms;
 
                         if is_swipe {
+                            let (start_x, start_y) = screen_info.remap((d.x, d.y));
+                            let (end_x, end_y) = screen_info.remap((last_x, last_y));
+
                             result.push(InputWithTimestamp {
                                 timestamp_milliseconds: d.time,
                                 input: Input::Swipe(Swipe {
                                     milliseconds: down_dur_ms,
-                                    x: [d.x, last_x],
-                                    y: [d.y, last_y],
+                                    x: [start_x, end_x],
+                                    y: [start_y, end_y],
                                 }),
                             })
                         } else {
+                            let (start_x, start_y) = screen_info.remap((d.x, d.y));
                             result.push(InputWithTimestamp {
                                 timestamp_milliseconds: d.time,
-                                input: Input::Tap(Tap { x : d.x, y : d.y, }),
+                                input: Input::Tap(Tap { x : start_x, y : start_y, }),
                             })
                         }
                     }
