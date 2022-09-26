@@ -187,10 +187,10 @@ impl InputRecorder {
             Ok(ok) => ok.ok(),
         };
 
-        let screenInfo = get_screen_info().await.ok_or(ReadEventsError::ParseError).unwrap_or(Default::default());
+        let screen_info = get_screen_info().await.ok_or(ReadEventsError::ParseError).unwrap_or(Default::default());
 
         let inputs = device_entry_and_input_events.map(
-            |e| convert_events_to_input(&e.1, tap_threshold_distance, tap_threshold_ms, screenInfo));
+            |e| convert_events_to_input(&e.1, tap_threshold_distance, tap_threshold_ms, screen_info));
 
         if let Err(_) = result_send.send(inputs) {
             eprintln!("failed to send result");

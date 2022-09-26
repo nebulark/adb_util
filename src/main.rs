@@ -17,9 +17,9 @@ fn main() {
 
         let native_options = eframe::NativeOptions::default();
         eframe::run_native(
-            "ABD Utility",
+            "Android Input Replayer",
             native_options,
-            Box::new(|cc| Box::new(adb_util::AdbApp::new(cc))),
+            Box::new(|cc| Box::new(android_input_replayer::AirApp::new(cc))),
         );
     }
 }

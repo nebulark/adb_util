@@ -2,7 +2,7 @@
 
 mod app;
 
-pub use app::AdbApp;
+pub use app::AirApp;
 mod commands;
 
 pub use commands::*;

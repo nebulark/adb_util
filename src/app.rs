@@ -11,7 +11,7 @@ use crate::{
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct AdbApp {
+pub struct AirApp {
     #[serde(skip)]
     input: Option<Arc<Vec<InputWithTimestamp>>>,
 
@@ -29,7 +29,7 @@ pub struct AdbApp {
     delay_ms_between_loops : u32,
 }
 
-impl Default for AdbApp {
+impl Default for AirApp {
     fn default() -> Self {
         Self {
             input: Default::default(),
@@ -43,8 +43,8 @@ impl Default for AdbApp {
     }
 }
 
-impl AdbApp {
-    const KEY : &'static str = "adb_util";
+impl AirApp {
+    const KEY : &'static str = "android_input_replayer";
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customized the look at feel of egui using
@@ -185,7 +185,7 @@ impl AdbApp {
         ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
 
 
-            ui.hyperlink_to("Source code", "https://github.com/nebulark/adb_util");
+            ui.hyperlink_to("Source code", "https://github.com/nebulark/android_input_replayer");
 
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 0.0;
@@ -211,7 +211,7 @@ impl AdbApp {
     }
 }
 
-impl eframe::App for AdbApp {
+impl eframe::App for AirApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, Self::KEY, self);
